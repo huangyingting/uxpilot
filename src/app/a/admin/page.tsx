@@ -122,6 +122,15 @@ export default function AdminGovernancePage() {
     await loadAdminData();
   };
 
+  const handleRotateInvitation = async (id: string) => {
+    await fetch(`/api/admin/invitations/${id}/rotate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ expiresInHours: 72 }),
+    });
+    await loadAdminData();
+  };
+
   const handleUpdateUser = async (
     id: string,
     payload: { role?: string; action?: "revoke" | "restore" }
@@ -353,6 +362,17 @@ export default function AdminGovernancePage() {
                         )}
                         <span>Copy</span>
                       </button>
+                      {inv.effectiveStatus !== "USED" && (
+                        <button
+                          type="button"
+                          onClick={() => handleRotateInvitation(inv.id)}
+                          data-testid={`rotate-invite-${inv.code}`}
+                          className="px-2 py-1 rounded bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 inline-flex items-center gap-1"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                          <span>Rotate</span>
+                        </button>
+                      )}
                       {inv.effectiveStatus === "PENDING" && (
                         <button
                           type="button"

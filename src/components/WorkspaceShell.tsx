@@ -25,6 +25,8 @@ import {
   Copy,
   Layers,
   ChevronRight,
+  MessageSquare,
+  FileText,
 } from "lucide-react";
 
 export interface WorkspaceBootstrapData {
@@ -241,6 +243,8 @@ export function WorkspaceShell({
     { href: "/a/ux-design-review", label: "UX Review & Heatmap", icon: ScanEye },
     { href: "/a/design-system", label: "Design Systems", icon: Palette },
     { href: "/a/pr-review", label: "PR Review", icon: GitPullRequest, badge: "Alpha" },
+    { href: "/a/chat", label: "AI UX Chat", icon: MessageSquare },
+    { href: "/a/ux-document", label: "UX Documents", icon: FileText },
     { href: "/a/published-sites", label: "Published Sites", icon: Globe },
     { href: "/a/account", label: "Account & MCP", icon: UserCheck },
   ];

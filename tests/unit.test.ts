@@ -11,7 +11,9 @@ import {
   validateInvitationCode,
   redeemInvitationAndCreateUser,
   revokeInvitation,
+  rotateInvitation,
 } from "../src/lib/invitations";
+import { checkRateLimit } from "../src/lib/rate-limit";
 import { prisma } from "../src/lib/prisma";
 import { seedInitialWorkspaceData } from "../src/lib/bootstrap";
 
@@ -90,14 +92,28 @@ async function runTests() {
   assert.equal(revokedCheck.valid, false);
   assert.match(revokedCheck.reason || "", /revoked/i);
 
-  // Dynamic revocation test
+  // Dynamic revocation & rotation test
   const toRevoke = await createInvitation({ assignedRole: "Viewer", expiresInHours: 12 });
   await revokeInvitation(toRevoke.id);
   const afterRevoke = await validateInvitationCode(toRevoke.code);
   assert.equal(afterRevoke.valid, false);
+
+  const rotated = await rotateInvitation(toRevoke.id, 48);
+  assert.notEqual(rotated.code, toRevoke.code);
+  const afterRotate = await validateInvitationCode(rotated.code);
+  assert.equal(afterRotate.valid, true);
   console.log(
-    "[PASS] 4. Single-use, email-locked, expiring, and revocable invitation lifecycle verified"
+    "[PASS] 4. Single-use, email-locked, expiring, revocable, and rotatable invitation lifecycle verified"
   );
+
+  // 4b. Rate limiter verification
+  const rlKey = `unit-test-${Date.now()}`;
+  assert.equal(checkRateLimit(rlKey, 2, 60_000).allowed, true);
+  assert.equal(checkRateLimit(rlKey, 2, 60_000).allowed, true);
+  const rlBlocked = checkRateLimit(rlKey, 2, 60_000);
+  assert.equal(rlBlocked.allowed, false);
+  assert.ok(rlBlocked.retryAfterSeconds >= 1);
+  console.log("[PASS] 4b. Sliding-window rate limiter verified");
 
   // 5. Pluggable AI Provider Engine (Copilot SDK / Azure OpenAI / Deterministic)
   process.env.AI_DISABLE_EXTERNAL = "1"; // Fast deterministic fallback for unit tests

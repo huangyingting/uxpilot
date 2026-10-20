@@ -10,10 +10,12 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Account has been revoked." }, { status: 403 });
   }
 
-  // Ensure initial workspace data exists
-  const totalUsers = await prisma.user.count();
-  if (totalUsers === 0) {
-    await seedInitialWorkspaceData();
+  // In non-production or when explicitly enabled, ensure initial workspace seed data exists
+  if (process.env.NODE_ENV !== "production" || process.env.ENABLE_DEMO_SEED !== "false") {
+    const totalUsers = await prisma.user.count();
+    if (totalUsers === 0) {
+      await seedInitialWorkspaceData();
+    }
   }
 
   if (!actor) {

@@ -311,16 +311,69 @@ async function main() {
     await adminPage.waitForTimeout(500);
     console.log("[PASS] 6.4 Published Sites Manager (/a/published-sites) verified");
 
-    // 6.5 Account & MCP Tokens (/a/account)
+    // 6.5 Account & MCP Tokens (/a/account) + Live JSON-RPC 2.0 MCP Server (/api/mcp)
     await adminPage.goto(`${BASE_URL}/a/account`, { waitUntil: "networkidle" });
     await adminPage.fill('[data-testid="account-name-input"]', "Alex Rivera (Lead Admin)");
     await adminPage.click('[data-testid="save-account-profile-btn"]');
     await adminPage.waitForSelector('[data-testid="account-saved-notice"]');
     await adminPage.click('[data-testid="create-mcp-token-btn"]');
     await adminPage.waitForTimeout(400);
-    console.log("[PASS] 6.5 Account Settings & MCP Access Token generator (/a/account) verified");
 
-    // 6.6 UX Pilot Labs (/labs, /labs/gradient-generator, /labs/dither-generator)
+    // Verify /api/health, /api/mcp, and /api/pages/[id]/export
+    const healthRes = await adminPage.request.get(`${BASE_URL}/api/health`);
+    assert.equal(healthRes.status(), 200);
+    const healthJson = await healthRes.json();
+    assert.equal(healthJson.status, "healthy");
+
+    const mcpRes = await adminPage.request.post(`${BASE_URL}/api/mcp`, {
+      data: {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "tools/call",
+        params: { name: "list_design_pages", arguments: { limit: 5 } },
+      },
+    });
+    assert.equal(mcpRes.status(), 200);
+    const mcpJson = await mcpRes.json();
+    assert.ok(mcpJson.result?.content?.[0]?.text);
+
+    const exportRes = await adminPage.request.get(
+      `${BASE_URL}/api/pages/page-fintech-command/export`
+    );
+    assert.equal(exportRes.status(), 200);
+    const exportJson = await exportRes.json();
+    assert.ok(exportJson.fileCount >= 3);
+    console.log(
+      "[PASS] 6.5 Account Settings, MCP JSON-RPC Server (/api/mcp), Project Bundle Export, and Healthcheck (/api/health) verified"
+    );
+
+    // 6.6 AI UX Copilot Chat (/a/chat) & AI PRD / UX Document Studio (/a/ux-document)
+    await adminPage.goto(`${BASE_URL}/a/chat`, { waitUntil: "networkidle" });
+    await adminPage.waitForSelector('[data-testid="chat-messages-list"]');
+    await adminPage.fill(
+      '[data-testid="chat-input"]',
+      "Critique our multi-currency treasury approval flow for mobile ergonomics"
+    );
+    await adminPage.click('[data-testid="chat-send-btn"]');
+    await adminPage.waitForTimeout(500);
+
+    await adminPage.goto(`${BASE_URL}/a/ux-document`, { waitUntil: "networkidle" });
+    await adminPage.waitForSelector('[data-testid="uxdoc-editor-textarea"]');
+    await adminPage.fill('[data-testid="uxdoc-title-input"]', "PRD: E2E Verified Treasury Spec");
+    await adminPage.click('[data-testid="generate-uxdoc-btn"]');
+    await adminPage.waitForTimeout(500);
+    await adminPage.click('[data-testid="save-uxdoc-btn"]');
+    await adminPage.waitForSelector('[data-testid="uxdoc-saved-banner"]');
+    console.log(
+      "[PASS] 6.6 AI UX Copilot Chat (/a/chat) & AI PRD / UX Document Studio (/a/ux-document) verified"
+    );
+
+    // 6.7 UX Pilot Labs (/labs, /labs/gradient-generator, /labs/dither-generator) + Direct Invite Route (/invite/[code])
+    await adminPage.goto(`${BASE_URL}/invite/UXP-2026-VIEWER1`, {
+      waitUntil: "networkidle",
+    });
+    await adminPage.waitForSelector('[data-testid="invite-grant-banner"]');
+
     await adminPage.goto(`${BASE_URL}/labs`, { waitUntil: "networkidle" });
     await adminPage.goto(`${BASE_URL}/labs/gradient-generator`, { waitUntil: "networkidle" });
     await adminPage.click('[data-testid="gradient-mode-fluid"]');
@@ -333,7 +386,7 @@ async function main() {
     await adminPage.click('[data-testid="dither-send-to-canvas-btn"]');
     await adminPage.waitForURL("**/a/ui-design**", { timeout: 15000 });
     console.log(
-      "[PASS] 6.6 UX Pilot Labs (/labs, /labs/gradient-generator, /labs/dither-generator -> Send to AI Canvas) verified"
+      "[PASS] 6.7 UX Pilot Labs (/labs, /labs/gradient-generator, /labs/dither-generator -> Send to AI Canvas) & Direct Invite Grant (/invite/[code]) verified"
     );
 
     await adminContext.close();

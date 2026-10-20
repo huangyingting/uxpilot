@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { registerUserWithInvitation, validateInvitationCode } from "@/lib/invitations";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code") || "";
@@ -13,6 +14,15 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get("x-forwarded-for") || "local";
+    const rl = checkRateLimit(`register:${ip}`, 30, 60_000);
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { ok: false, error: "Too many registration attempts. Please try again shortly." },
+        { status: 429 }
+      );
+    }
+
     const body = await req.json();
     const user = await registerUserWithInvitation({
       code: body.invitationCode || body.code || "",

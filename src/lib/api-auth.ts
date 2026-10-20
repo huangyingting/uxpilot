@@ -30,8 +30,9 @@ export function hasMinimumRole(actorRole: string, requiredRole: AppRole): boolea
 /**
  * Resolves the active session actor and re-verifies against the database so that
  * user revocation or role changes take effect immediately on every API request.
- * Also supports `x-uxpilot-actor-email` header in test/automation contexts when
- * a valid database user exists.
+ * Supports:
+ * 1. NextAuth JWT session cookies (`getServerSession(authOptions)`)
+ * 2. Personal MCP Access Tokens (`Authorization: Bearer uxp_mcp_...`)
  */
 export async function resolveSessionActor(req?: NextRequest): Promise<{
   actor: SessionActor | null;
@@ -48,10 +49,24 @@ export async function resolveSessionActor(req?: NextRequest): Promise<{
     // Ignore getServerSession context error outside request scope
   }
 
+  // Support Bearer MCP token authentication for API / CLI / IDE integrations
   if (!email && req) {
-    const headerEmail = req.headers.get("x-uxpilot-actor-email");
-    if (headerEmail) {
-      email = headerEmail.trim().toLowerCase();
+    const authHeader = req.headers.get("authorization") || "";
+    if (authHeader.toLowerCase().startsWith("bearer uxp_mcp_")) {
+      const tokenValue = authHeader.slice(7).trim();
+      if (tokenValue) {
+        const mcpRecord = await prisma.mcpAccessToken.findUnique({
+          where: { tokenValue },
+          include: { user: true },
+        });
+        if (mcpRecord && mcpRecord.status === "ACTIVE" && mcpRecord.user) {
+          await prisma.mcpAccessToken.update({
+            where: { id: mcpRecord.id },
+            data: { lastUsedAt: new Date() },
+          });
+          email = mcpRecord.user.email.toLowerCase();
+        }
+      }
     }
   }
 

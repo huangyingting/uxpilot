@@ -1009,25 +1009,40 @@ export function CanvasStudio({
                     HTML5 / CSS
                   </button>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] text-slate-400">{selectedScreen.name}</span>
-                  <button
-                    type="button"
-                    data-testid="copy-exported-code-btn"
-                    onClick={() => {
-                      const code =
-                        codeTab === "react"
-                          ? selectedScreen.reactCode || selectedScreen.htmlContent
-                          : selectedScreen.htmlContent;
-                      navigator.clipboard?.writeText(code);
-                      setCopiedCode(true);
-                      setTimeout(() => setCopiedCode(false), 1800);
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1"
-                  >
-                    {copiedCode ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    <span>{copiedCode ? "Copied!" : "Copy Code"}</span>
-                  </button>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-slate-400 truncate">
+                    {selectedScreen.name}
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <a
+                      href={`/api/pages/${page?.id || "page-fintech-command"}/export?format=download`}
+                      data-testid="export-project-bundle-btn"
+                      className="px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold"
+                    >
+                      Bundle JSON
+                    </a>
+                    <button
+                      type="button"
+                      data-testid="copy-exported-code-btn"
+                      onClick={() => {
+                        const code =
+                          codeTab === "react"
+                            ? selectedScreen.reactCode || selectedScreen.htmlContent
+                            : selectedScreen.htmlContent;
+                        navigator.clipboard?.writeText(code);
+                        setCopiedCode(true);
+                        setTimeout(() => setCopiedCode(false), 1800);
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1"
+                    >
+                      {copiedCode ? (
+                        <Check className="w-3.5 h-3.5" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
+                      <span>{copiedCode ? "Copied!" : "Copy Code"}</span>
+                    </button>
+                  </div>
                 </div>
                 <pre
                   data-testid="exported-code-block"

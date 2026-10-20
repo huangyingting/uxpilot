@@ -19,14 +19,17 @@ An AI-powered UI/UX Design, Wireframing, Design System Token Extraction, Predict
    - Import design systems from **Figma Plugin**, **Live Website URL**, **Product Screenshots**, or **`DESIGN.md`**.
 4. **Automated GitHub PR UX Review (`/a/pr-review`)**:
    - Inspect pull requests for accessibility focus traps, WCAG contrast, and token adherence.
-5. **UX Pilot Shader Labs (`/labs`, `/labs/gradient-generator`, `/labs/dither-generator`)**:
+5. **AI UX Copilot Chat (`/a/chat`) & AI PRD / UX Document Studio (`/a/ux-document`)**:
+   - Persistent conversational UX research threads and Markdown PRD / IA / Accessibility specification studio with 1-click materialization into AI Canvas screens.
+6. **UX Pilot Shader Labs (`/labs`, `/labs/gradient-generator`, `/labs/dither-generator`)**:
    - Interactive Mesh/Aurora/Fluid Gradient and Retro Bayer/Floyd-Steinberg/Halftone/ASCII Dither generators with **Send to AI Canvas**.
-6. **Invite-Only Registration, RBAC, Revocation & Audit Logging (`/a/admin`, `/sign-up`, `/sign-in`)**:
-   - Single-use and expiring invitation codes (`AccountInvitation`) with optional email locks.
-   - `Admin`, `Editor`, and `Viewer` RBAC enforcement across UI and API routes.
-   - Immediate session revocation (`REVOKED` status) and immutable `AuditLog` trail.
+7. **Invite-Only Registration, RBAC, Revocation, MCP Server & Audit Logging (`/a/admin`, `/sign-up`, `/invite/[code]`, `/api/mcp`)**:
+   - Single-use, expiring, email-locked, and rotatable invitation codes (`AccountInvitation`) with direct `/invite/[code]` redemption links.
+   - `Admin`, `Editor`, and `Viewer` RBAC enforcement across Next.js 16 `src/proxy.ts`, UI, and API routes.
+   - Immediate session revocation (`REVOKED` status), sliding-window rate limiting, HTTP security headers, `/api/health` readiness probe, and immutable `AuditLog` trail.
+   - Live JSON-RPC 2.0 Model Context Protocol endpoint (`/api/mcp`) authenticated via Personal MCP Access Tokens (`Authorization: Bearer uxp_mcp_...`).
    - **CLI-only Bootstrap Admin**: No public HTTP bootstrap endpoint; bootstrap admins are provisioned strictly via `npm run bootstrap:admin`.
-7. **Pluggable AI Provider Engine (`src/lib/ai/`)**:
+8. **Pluggable AI Provider Engine (`src/lib/ai/`)**:
    - Default **`@github/copilot-sdk`** (`CopilotSDKProvider`) with runtime or environment-based switching to **Azure OpenAI** (`AzureOpenAIProvider`) and deterministic synthesis fallback.
 
 ---

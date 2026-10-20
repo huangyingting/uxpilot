@@ -189,6 +189,26 @@ export async function revokeInvitation(id: string) {
   });
 }
 
+export async function rotateInvitation(id: string, expiresInHours = 72) {
+  const existing = await prisma.accountInvitation.findUnique({ where: { id } });
+  if (!existing) {
+    throw new Error("Invitation not found.");
+  }
+  if (existing.redeemedAt) {
+    throw new Error("Cannot rotate an invitation that has already been redeemed.");
+  }
+  const newCode = generateInviteCode("UXP");
+  const newExpiresAt = new Date(Date.now() + expiresInHours * 3600 * 1000);
+  return prisma.accountInvitation.update({
+    where: { id },
+    data: {
+      code: newCode,
+      revokedAt: null,
+      expiresAt: newExpiresAt,
+    },
+  });
+}
+
 export async function redeemInvitationAndCreateUser(input: {
   code: string;
   email: string;
