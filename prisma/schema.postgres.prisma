@@ -1,0 +1,270 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                  String               @id @default(cuid())
+  email               String               @unique
+  name                String
+  image               String?
+  role                String               @default("Editor")
+  status              String               @default("ACTIVE")
+  revokedAt           DateTime?
+  revokedReason       String?
+  planType            String               @default("pro")
+  creditsRemaining    Int                  @default(1500)
+  creditsTotal        Int                  @default(1800)
+  onboardingCompleted Boolean              @default(true)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  passwordCredential  PasswordCredential?
+  createdInvitations  AccountInvitation[]  @relation("InvitationCreator")
+  redeemedInvitation  AccountInvitation?   @relation("InvitationRedeemer")
+  workstreams         Workstream[]
+  designPages         DesignPage[]
+  designSystems       DesignSystem[]
+  designReviews       DesignReview[]
+  prReviewRuns        PrReviewRun[]
+  publishedSites      PublishedSite[]
+  mcpTokens           McpAccessToken[]
+  comments            DesignComment[]
+  auditLogs           AuditLog[]           @relation("AuditActor")
+}
+
+model PasswordCredential {
+  userId       String   @id
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AccountInvitation {
+  id               String    @id @default(cuid())
+  code             String    @unique
+  email            String?
+  assignedRole     String    @default("Editor")
+  note             String?
+  expiresAt        DateTime
+  redeemedAt       DateTime?
+  revokedAt        DateTime?
+  createdByUserId  String?
+  redeemedByUserId String?   @unique
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  createdBy        User?     @relation("InvitationCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  redeemedBy       User?     @relation("InvitationRedeemer", fields: [redeemedByUserId], references: [id], onDelete: SetNull)
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  actorUserId  String?
+  actorEmail   String?
+  actorRole    String?
+  action       String
+  targetType   String
+  targetId     String?
+  summary      String
+  metadataJson String   @default("{}")
+  createdAt    DateTime @default(now())
+
+  actor        User?    @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+}
+
+model Workstream {
+  id          String       @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  color       String       @default("#7c3aed")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pages       DesignPage[]
+}
+
+model DesignSystem {
+  id             String       @id @default(cuid())
+  userId         String
+  name           String
+  sourceType     String       @default("react")
+  sourceUrl      String?
+  tokensJson     String       @default("{}")
+  componentsJson String       @default("[]")
+  designMd       String       @default("")
+  isShared       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pages          DesignPage[]
+}
+
+model DesignPage {
+  id               String            @id @default(cuid())
+  userId           String
+  workstreamId     String?
+  designSystemId   String?
+  name             String
+  globalPrompt     String?
+  platform         String            @default("mobile")
+  mode             String            @default("hifi")
+  isBookmarked     Boolean           @default(false)
+  isShared         Boolean           @default(false)
+  sharedWithEmails String            @default("[]")
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workstream       Workstream?       @relation(fields: [workstreamId], references: [id], onDelete: SetNull)
+  designSystem     DesignSystem?     @relation(fields: [designSystemId], references: [id], onDelete: SetNull)
+  groups           ScreenGroup[]
+  screens          WireframeScreen[]
+  flowcharts       CanvasFlowchart[]
+  comments         DesignComment[]
+  publishedSites   PublishedSite[]
+}
+
+model ScreenGroup {
+  id            String            @id @default(cuid())
+  pageId        String
+  name          String
+  sectionPrompt String?
+  orderIndex    Int               @default(0)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  page          DesignPage        @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  screens       WireframeScreen[]
+}
+
+model WireframeScreen {
+  id                 String          @id @default(cuid())
+  pageId             String
+  groupId            String?
+  name               String
+  screenPrompt       String?
+  fidelity           String          @default("hifi")
+  platform           String          @default("mobile")
+  htmlContent        String
+  reactCode          String          @default("")
+  x                  Int             @default(80)
+  y                  Int             @default(100)
+  width              Int             @default(390)
+  height             Int             @default(844)
+  linkedNextScreenId String?
+  versionHistoryJson String          @default("[]")
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  page               DesignPage      @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  group              ScreenGroup?    @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  reviews            DesignReview[]
+  comments           DesignComment[]
+}
+
+model CanvasFlowchart {
+  id          String     @id @default(cuid())
+  pageId      String
+  title       String
+  prompt      String?
+  mermaidCode String
+  nodesJson   String     @default("[]")
+  x           Int        @default(100)
+  y           Int        @default(1020)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  page        DesignPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+}
+
+model DesignComment {
+  id          String           @id @default(cuid())
+  pageId      String
+  screenId    String?
+  authorId    String
+  authorName  String
+  body        String
+  x           Int              @default(200)
+  y           Int              @default(200)
+  resolved    Boolean          @default(false)
+  repliesJson String           @default("[]")
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  page        DesignPage       @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  screen      WireframeScreen? @relation(fields: [screenId], references: [id], onDelete: SetNull)
+  author      User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model DesignReview {
+  id                String           @id @default(cuid())
+  userId            String
+  screenId          String?
+  title             String
+  reviewGoal        String?
+  overallScore      Int
+  metricsJson       String           @default("{}")
+  findingsJson      String           @default("[]")
+  heatmapPointsJson String           @default("[]")
+  scanpathJson      String           @default("[]")
+  gazeFlowJson      String           @default("[]")
+  createdAt         DateTime         @default(now())
+
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  screen            WireframeScreen? @relation(fields: [screenId], references: [id], onDelete: SetNull)
+}
+
+model PrReviewRun {
+  id             String   @id @default(cuid())
+  userId         String
+  repoFullName   String
+  prNumber       Int
+  prTitle        String
+  branchName     String
+  designSystemId String?
+  status         String   @default("PASSED")
+  score          Int      @default(92)
+  summary        String
+  findingsJson   String   @default("[]")
+  createdAt      DateTime @default(now())
+
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PublishedSite {
+  id           String     @id @default(cuid())
+  userId       String
+  pageId       String
+  slug         String     @unique
+  title        String
+  status       String     @default("PUBLISHED")
+  passwordHash String?
+  viewCount    Int        @default(0)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  page         DesignPage @relation(fields: [pageId], references: [id], onDelete: Cascade)
+}
+
+model McpAccessToken {
+  id          String    @id @default(cuid())
+  userId      String
+  name        String
+  tokenPrefix String
+  tokenValue  String    @unique
+  status      String    @default("ACTIVE")
+  lastUsedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
